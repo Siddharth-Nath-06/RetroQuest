@@ -312,7 +312,7 @@ const AIQuestAssistant = ({
                                         <li>Restart Chrome completely</li>
                                         <li>Go to <code>chrome://components</code> and find "Optimization Guide On Device Model"</li>
                                         <li>If missing or version 0.0.0.0, click "Check for update"</li>
-                                        <li><strong>Troubleshooting:</strong> Open Console (F12) and run <code>await window.ai.languageModel.create()</code></li>
+                                        <li><strong>Troubleshooting:</strong> Open Console (F12) and run <code>await LanguageModel.create()</code></li>
                                         <li>Reload RetroQuest to start talking to Quest Master!</li>
                                     </ol>
                                 </details>
