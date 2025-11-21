@@ -46,9 +46,38 @@
     gap: var(--spacing-xl);
 }
 
+.quest-section-header {
+    display: flex;
+    align-items: center;
+}
+
 .quest-section h3 {
     color: var(--accent-secondary);
     margin-bottom: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.collapse-toggle {
+    background: none;
+    border: none;
+    color: var(--accent-secondary);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    transition: transform 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+}
+
+.collapse-toggle:hover {
+    color: var(--accent-primary);
+    transform: scale(1.2);
 }
 
 .quest-list {

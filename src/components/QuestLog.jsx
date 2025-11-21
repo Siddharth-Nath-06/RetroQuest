@@ -335,6 +335,8 @@ const QuestLog = ({ quests, userProfile, onAddQuest, onUpdateQuest, onDeleteQues
                     onDelete={handleDeleteQuest}
                     isCompleted
                     emptyMessage="No completed quests yet. Complete your first quest!"
+                    collapsible
+                    defaultCollapsed
                 />
 
                 <QuestSection
@@ -344,6 +346,8 @@ const QuestLog = ({ quests, userProfile, onAddQuest, onUpdateQuest, onDeleteQues
                     onDelete={handleDeleteQuest}
                     isArchived
                     emptyMessage="No archived quests."
+                    collapsible
+                    defaultCollapsed
                 />
             </div>
 
@@ -358,31 +362,48 @@ const QuestLog = ({ quests, userProfile, onAddQuest, onUpdateQuest, onDeleteQues
     );
 };
 
-const QuestSection = ({ title, quests, onComplete, onEdit, onArchive, onRevive, onDelete, isCompleted, isArchived, emptyMessage }) => {
+const QuestSection = ({ title, quests, onComplete, onEdit, onArchive, onRevive, onDelete, isCompleted, isArchived, emptyMessage, collapsible = false, defaultCollapsed = false }) => {
+    const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
+
     return (
         <div className="quest-section">
-            <h3>{title} ({quests.length})</h3>
-            {quests.length === 0 ? (
-                <div className="empty-state">
-                    <div className="empty-state-icon">📭</div>
-                    <p>{emptyMessage}</p>
-                </div>
-            ) : (
-                <div className="quest-list">
-                    {quests.map(quest => (
-                        <QuestCard
-                            key={quest.id}
-                            quest={quest}
-                            onComplete={onComplete}
-                            onEdit={onEdit}
-                            onArchive={onArchive}
-                            onRevive={onRevive}
-                            onDelete={onDelete}
-                            isCompleted={isCompleted}
-                            isArchived={isArchived}
-                        />
-                    ))}
-                </div>
+            <div className="quest-section-header">
+                <h3>
+                    {collapsible && (
+                        <button
+                            className="collapse-toggle"
+                            onClick={() => setIsCollapsed(!isCollapsed)}
+                            aria-label={isCollapsed ? "Expand" : "Collapse"}
+                        >
+                            {isCollapsed ? '▶' : '▼'}
+                        </button>
+                    )}
+                    {title} ({quests.length})
+                </h3>
+            </div>
+            {!isCollapsed && (
+                quests.length === 0 ? (
+                    <div className="empty-state">
+                        <div className="empty-state-icon">📭</div>
+                        <p>{emptyMessage}</p>
+                    </div>
+                ) : (
+                    <div className="quest-list">
+                        {quests.map(quest => (
+                            <QuestCard
+                                key={quest.id}
+                                quest={quest}
+                                onComplete={onComplete}
+                                onEdit={onEdit}
+                                onArchive={onArchive}
+                                onRevive={onRevive}
+                                onDelete={onDelete}
+                                isCompleted={isCompleted}
+                                isArchived={isArchived}
+                            />
+                        ))}
+                    </div>
+                )
             )}
         </div>
     );
