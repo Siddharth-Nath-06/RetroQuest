@@ -111,6 +111,7 @@ function App() {
           <AIQuestAssistant
             userProfile={userProfile}
             onAddQuest={addQuest}
+            existingQuests={quests}
             messages={aiMessages}
             setMessages={setAiMessages}
             generatedQuests={aiGeneratedQuests}

@@ -6,6 +6,7 @@ import { saveGeminiApiKey, loadGeminiApiKey } from '../utils/storage';
 const AIQuestAssistant = ({
     userProfile,
     onAddQuest,
+    existingQuests = [],
     messages,
     setMessages,
     generatedQuests,
@@ -102,7 +103,16 @@ const AIQuestAssistant = ({
         // Create a unique ID for tracking locally within this session
         const questId = `${quest.title}-${index}`;
 
+        // 1. Check if already added in this session (UI state)
         if (addedQuests.has(questId)) return;
+
+        // 2. Check if already exists in main quest log (Persistence state)
+        const isDuplicate = existingQuests.some(q => q.title === quest.title);
+
+        if (isDuplicate) {
+            const confirmAdd = window.confirm(`The quest "${quest.title}" is already in your Quest Log. Do you want to add it again?`);
+            if (!confirmAdd) return;
+        }
 
         onAddQuest(quest);
         setAddedQuests(prev => new Set(prev).add(questId));
@@ -110,15 +120,37 @@ const AIQuestAssistant = ({
 
     const handleAddAllQuests = (quests) => {
         let newAdded = new Set(addedQuests);
+        let addedCount = 0;
+        let skippedCount = 0;
+
         quests.forEach((quest, index) => {
             const questId = `${quest.title}-${index}`;
-            if (!newAdded.has(questId)) {
-                onAddQuest(quest);
-                newAdded.add(questId);
+
+            // Skip if already added in this session
+            if (newAdded.has(questId)) {
+                skippedCount++;
+                return;
             }
+
+            // Skip if already in main quest log
+            const isDuplicate = existingQuests.some(q => q.title === quest.title);
+            if (isDuplicate) {
+                skippedCount++;
+                return;
+            }
+
+            onAddQuest(quest);
+            newAdded.add(questId);
+            addedCount++;
         });
+
         setAddedQuests(newAdded);
-        alert(`${quests.length} quests have been added to thy sacred quest log!`);
+
+        if (addedCount > 0) {
+            alert(`${addedCount} quests have been added to thy sacred quest log!${skippedCount > 0 ? ` (${skippedCount} skipped)` : ''}`);
+        } else {
+            alert(`No new quests were added. They may already be in your log!`);
+        }
     };
 
     const handleKeyDown = (e) => {
