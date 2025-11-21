@@ -10,16 +10,18 @@ const AIQuestAssistant = ({
     messages,
     setMessages,
     generatedQuests,
-    setGeneratedQuests
+    setGeneratedQuests,
+    isLoading,
+    setIsLoading
 }) => {
     const [inputMessage, setInputMessage] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
     const [aiCapability, setAICapability] = useState(null);
     const [apiKey, setApiKey] = useState('');
     const [showApiKeyInput, setShowApiKeyInput] = useState(false);
     const [addedQuests, setAddedQuests] = useState(new Set());
     const [confirmingQuestId, setConfirmingQuestId] = useState(null);
     const textareaRef = useRef(null);
+    const messagesEndRef = useRef(null);
 
     useEffect(() => {
         const checkAI = async () => {
@@ -44,6 +46,13 @@ const AIQuestAssistant = ({
             textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
         }
     }, [inputMessage]);
+
+    // Auto-scroll to bottom when messages change
+    useEffect(() => {
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [messages, isLoading]);
 
     const handleSaveApiKey = () => {
         saveGeminiApiKey(apiKey);
@@ -310,6 +319,7 @@ const AIQuestAssistant = ({
                                         </div>
                                     )
                                 }
+                                <div ref={messagesEndRef} />
                             </div >
 
                             <div className="chat-input">

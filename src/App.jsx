@@ -21,6 +21,7 @@ function App() {
   // AI Assistant State (Lifted for persistence across tabs)
   const [aiMessages, setAiMessages] = useState([]);
   const [aiGeneratedQuests, setAiGeneratedQuests] = useState([]);
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   // Save user profile when it changes
   useEffect(() => {
@@ -116,6 +117,8 @@ function App() {
             setMessages={setAiMessages}
             generatedQuests={aiGeneratedQuests}
             setGeneratedQuests={setAiGeneratedQuests}
+            isLoading={isAiLoading}
+            setIsLoading={setIsAiLoading}
           />
         );
       default:
