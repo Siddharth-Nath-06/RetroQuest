@@ -1,5 +1,7 @@
 # ⚔️ RetroQuest
 
+[![Live Demo](https://img.shields.io/badge/demo-online-green.svg)](https://siddharth-nath-06.github.io/RetroQuest/)
+
 A gamified productivity application that turns your daily tasks into an epic RPG adventure. Track your quests, earn XP and coins, and level up your life!
 
 ## 🤖 AI-Generated Project
