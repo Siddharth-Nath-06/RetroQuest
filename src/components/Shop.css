@@ -1,0 +1,199 @@
+.shop-container {
+    display: grid;
+    gap: var(--spacing-lg);
+}
+
+.shop-form {
+    background-color: var(--bg-tertiary);
+    padding: var(--spacing-lg);
+    border: 2px solid var(--accent-secondary);
+    border-radius: var(--radius-md);
+    margin-top: var(--spacing-lg);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.template-section {
+    margin-top: var(--spacing-lg);
+    padding-top: var(--spacing-lg);
+    border-top: 2px solid var(--text-muted);
+}
+
+.template-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
+}
+
+.form-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+    justify-content: flex-end;
+}
+
+.purchase-feedback {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    background-color: var(--accent-success);
+    color: var(--bg-primary);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--radius-sm);
+    border: 2px solid var(--text-primary);
+    box-shadow: 4px 4px 0 var(--shadow-color);
+    z-index: 1000;
+    font-size: 10px;
+}
+
+.shop-items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.shop-item-card {
+    background-color: var(--bg-tertiary);
+    border: 2px solid var(--accent-info);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-normal);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.shop-item-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 4px 4px 0 var(--shadow-color);
+}
+
+.shop-item-card.hidden-item {
+    opacity: 0.7;
+    border-style: dashed;
+}
+
+.item-category-badge {
+    position: absolute;
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+    font-size: 8px;
+    padding: 4px 8px;
+    background-color: var(--accent-secondary);
+    color: var(--bg-primary);
+    border-radius: var(--radius-sm);
+    font-weight: bold;
+}
+
+.shop-item-card h4 {
+    margin: var(--spacing-lg) 0 var(--spacing-md) 0;
+    font-size: 11px;
+    color: var(--text-primary);
+}
+
+.item-description {
+    font-size: 9px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-md);
+    flex-grow: 1;
+}
+
+.item-cost {
+    font-size: 12px;
+    color: var(--accent-secondary);
+    font-weight: bold;
+    margin-bottom: var(--spacing-md);
+}
+
+.item-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+}
+
+.hidden-items-section {
+    margin-top: var(--spacing-lg);
+    padding: var(--spacing-lg);
+    background-color: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+}
+
+.hidden-items-section summary {
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: bold;
+    margin-bottom: var(--spacing-md);
+}
+
+.hidden-items-section summary:hover {
+    color: var(--accent-primary);
+}
+
+.hidden-items-section[open] summary {
+    margin-bottom: var(--spacing-lg);
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.sort-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.sort-controls label {
+    font-size: 10px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.sort-select {
+    margin-top: var(--spacing-md);
+    font-size: 9px;
+    padding: 4px 8px;
+    background-color: var(--bg-tertiary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.sort-select:hover {
+    border-color: var(--accent-primary);
+}
+
+@media (max-width: 768px) {
+    .shop-items-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .purchase-feedback {
+        top: 80px;
+        right: 10px;
+        left: 10px;
+        font-size: 8px;
+    }
+
+    .header-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--spacing-sm);
+    }
+
+    .sort-controls {
+        justify-content: space-between;
+    }
+}

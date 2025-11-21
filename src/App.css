@@ -1,0 +1,16 @@
+.app {
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+}
+
+.app-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-lg);
+}
+
+@media (max-width: 768px) {
+  .app-content {
+    padding: var(--spacing-md);
+  }
+}
