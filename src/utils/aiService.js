@@ -233,7 +233,7 @@ const generateWithGeminiAPI = async (userMessage, userContext) => {
         const fullPrompt = `${systemPrompt}\n\nUSER REQUEST: ${userMessage}`;
 
         const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
             {
                 method: 'POST',
                 headers: {
@@ -250,13 +250,21 @@ const generateWithGeminiAPI = async (userMessage, userContext) => {
         );
 
         if (!response.ok) {
-            throw new Error(`API error: ${response.status}`);
+            const errorBody = await response.text();
+            console.error('Gemini API Error Details:', {
+                status: response.status,
+                statusText: response.statusText,
+                body: errorBody
+            });
+            throw new Error(`API error: ${response.status} - ${errorBody}`);
         }
 
         const data = await response.json();
+        console.log('Gemini API Response:', data);
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!text) {
+            console.error('No text in response:', data);
             throw new Error('No response from Gemini API');
         }
 

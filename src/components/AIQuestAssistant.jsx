@@ -274,13 +274,19 @@ const AIQuestAssistant = ({
                             ) : selectedMethod === 'gemini-api' ? (
                                 <div className="setup-method">
                                     <h4>☁️ Gemini API Key Setup</h4>
-                                    <p>Free and easy to set up:</p>
+                                    <p>Get your free API key from Google AI Studio:</p>
                                     <ol>
                                         <li>Visit <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a></li>
-                                        <li>Click "Create API Key" (requires Google account)</li>
+                                        <li>Sign in with your Google account</li>
+                                        <li>Click "Get API Key" or "Create API Key"</li>
+                                        <li>If prompted, create a new Google Cloud project (free tier available)</li>
+                                        <li>Select "Create API key in new project" or choose an existing project</li>
                                         <li>Copy your API key and paste it below</li>
                                         <li>Click "Activate Connection"</li>
                                     </ol>
+                                    <p style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: 'var(--spacing-sm)' }}>
+                                        💡 <strong>Note:</strong> Google AI Studio provides a generous free tier. You'll need to create a Google Cloud project, but no credit card is required for the free tier.
+                                    </p>
                                     <div className="form-group">
                                         <label>🗝️ Gemini API Key</label>
                                         <input
