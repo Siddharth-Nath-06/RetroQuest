@@ -1,16 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './AIQuestAssistant.css';
 import { detectAICapability, generateQuestsFromPrompt } from '../utils/aiService';
 import { saveGeminiApiKey, loadGeminiApiKey } from '../utils/storage';
 
-const AIQuestAssistant = ({ userProfile, onAddQuest }) => {
-    const [messages, setMessages] = useState([]);
+const AIQuestAssistant = ({
+    userProfile,
+    onAddQuest,
+    messages,
+    setMessages,
+    generatedQuests,
+    setGeneratedQuests
+}) => {
     const [inputMessage, setInputMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [aiCapability, setAICapability] = useState(null);
     const [apiKey, setApiKey] = useState('');
     const [showApiKeyInput, setShowApiKeyInput] = useState(false);
-    const [generatedQuests, setGeneratedQuests] = useState([]);
+    const [addedQuests, setAddedQuests] = useState(new Set());
+    const textareaRef = useRef(null);
 
     useEffect(() => {
         const checkAI = async () => {
@@ -28,6 +35,14 @@ const AIQuestAssistant = ({ userProfile, onAddQuest }) => {
         checkAI();
     }, []);
 
+    // Auto-resize textarea
+    useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+            textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+        }
+    }, [inputMessage]);
+
     const handleSaveApiKey = () => {
         saveGeminiApiKey(apiKey);
         setShowApiKeyInput(false);
@@ -42,9 +57,14 @@ const AIQuestAssistant = ({ userProfile, onAddQuest }) => {
             content: inputMessage
         };
 
-        setMessages([...messages, userMsg]);
+        setMessages(prev => [...prev, userMsg]);
         setInputMessage('');
         setIsLoading(true);
+
+        // Reset height
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+        }
 
         try {
             const result = await generateQuestsFromPrompt(inputMessage, userProfile);
@@ -78,15 +98,34 @@ const AIQuestAssistant = ({ userProfile, onAddQuest }) => {
         }
     };
 
-    const handleAddQuest = (quest) => {
+    const handleAddQuest = (quest, index) => {
+        // Create a unique ID for tracking locally within this session
+        const questId = `${quest.title}-${index}`;
+
+        if (addedQuests.has(questId)) return;
+
         onAddQuest(quest);
-        alert(`Quest "${quest.title}" has been inscribed in thy quest log!`);
+        setAddedQuests(prev => new Set(prev).add(questId));
     };
 
-    const handleAddAllQuests = () => {
-        generatedQuests.forEach(quest => onAddQuest(quest));
-        alert(`${generatedQuests.length} quests have been added to thy sacred quest log!`);
-        setGeneratedQuests([]);
+    const handleAddAllQuests = (quests) => {
+        let newAdded = new Set(addedQuests);
+        quests.forEach((quest, index) => {
+            const questId = `${quest.title}-${index}`;
+            if (!newAdded.has(questId)) {
+                onAddQuest(quest);
+                newAdded.add(questId);
+            }
+        });
+        setAddedQuests(newAdded);
+        alert(`${quests.length} quests have been added to thy sacred quest log!`);
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSendMessage();
+        }
     };
 
     return (
@@ -149,7 +188,7 @@ const AIQuestAssistant = ({ userProfile, onAddQuest }) => {
                                     <li>Restart Chrome completely</li>
                                     <li>Go to <code>chrome://components</code> and find "Optimization Guide On Device Model"</li>
                                     <li>If missing or version 0.0.0.0, click "Check for update"</li>
-                                    <li><strong>Troubleshooting:</strong> Open Console (F12) and run <code>await LanguageModel.create()</code></li>
+                                    <li><strong>Troubleshooting:</strong> Open Console (F12) and run <code>await window.ai.languageModel.create()</code> or <code>await LanguageModel.create()</code></li>
                                     <li>Reload RetroQuest to start talking to Quest Master!</li>
                                 </ol>
                             </div>
@@ -180,34 +219,39 @@ const AIQuestAssistant = ({ userProfile, onAddQuest }) => {
                                         </div>
                                         {msg.quests && msg.quests.length > 0 && (
                                             <div className="generated-quests">
-                                                {msg.quests.map((quest, qIndex) => (
-                                                    <div key={qIndex} className="quest-preview">
-                                                        <h4>{quest.title}</h4>
-                                                        <p>{quest.description}</p>
-                                                        <div className="quest-preview-rewards">
-                                                            <span>+{quest.xpReward} XP</span>
-                                                            <span>+{quest.coinReward} 💰</span>
-                                                            {quest.deadline && <span>📅 {quest.deadline}</span>}
-                                                        </div>
-                                                        {quest.tags && quest.tags.length > 0 && (
-                                                            <div className="quest-preview-tags">
-                                                                {quest.tags.map((tag, tIndex) => (
-                                                                    <span key={tIndex} className="badge">{tag}</span>
-                                                                ))}
+                                                {msg.quests.map((quest, qIndex) => {
+                                                    const questId = `${quest.title}-${qIndex}`;
+                                                    const isAdded = addedQuests.has(questId);
+                                                    return (
+                                                        <div key={qIndex} className="quest-preview">
+                                                            <h4>{quest.title}</h4>
+                                                            <p>{quest.description}</p>
+                                                            <div className="quest-preview-rewards">
+                                                                <span>+{quest.xpReward} XP</span>
+                                                                <span>+{quest.coinReward} 💰</span>
+                                                                {quest.deadline && <span>📅 {quest.deadline}</span>}
                                                             </div>
-                                                        )}
-                                                        <button
-                                                            className="btn btn-success btn-sm"
-                                                            onClick={() => handleAddQuest(quest)}
-                                                        >
-                                                            + Add Quest
-                                                        </button>
-                                                    </div>
-                                                ))}
+                                                            {quest.tags && quest.tags.length > 0 && (
+                                                                <div className="quest-preview-tags">
+                                                                    {quest.tags.map((tag, tIndex) => (
+                                                                        <span key={tIndex} className="badge">{tag}</span>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                            <button
+                                                                className={`btn btn-sm ${isAdded ? 'btn-secondary' : 'btn-success'}`}
+                                                                onClick={() => handleAddQuest(quest, qIndex)}
+                                                                disabled={isAdded}
+                                                            >
+                                                                {isAdded ? '✓ Added' : '+ Add Quest'}
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })}
                                                 {msg.quests.length > 1 && (
                                                     <button
                                                         className="btn btn-primary"
-                                                        onClick={handleAddAllQuests}
+                                                        onClick={() => handleAddAllQuests(msg.quests)}
                                                     >
                                                         + Add All Quests
                                                     </button>
@@ -226,13 +270,14 @@ const AIQuestAssistant = ({ userProfile, onAddQuest }) => {
                             </div>
 
                             <div className="chat-input">
-                                <input
-                                    type="text"
+                                <textarea
+                                    ref={textareaRef}
                                     value={inputMessage}
                                     onChange={(e) => setInputMessage(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                                    onKeyDown={handleKeyDown}
                                     placeholder="Speak your quest, brave adventurer..."
                                     disabled={isLoading}
+                                    rows={1}
                                 />
                                 <button
                                     className="btn btn-primary"

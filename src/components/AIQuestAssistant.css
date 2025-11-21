@@ -183,25 +183,3 @@
     display: flex;
     gap: 4px;
 }
-
-.chat-input {
-    display: flex;
-    gap: var(--spacing-sm);
-}
-
-.chat-input input {
-    flex: 1;
-    margin-bottom: 0;
-}
-
-.chat-input .btn {
-    margin-bottom: 0;
-}
-
-@media (max-width: 768px) {
-
-    .message.user .message-content,
-    .message.assistant .message-content {
-        max-width: 95%;
-    }
-}
