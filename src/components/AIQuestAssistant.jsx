@@ -18,6 +18,7 @@ const AIQuestAssistant = ({
     const [apiKey, setApiKey] = useState('');
     const [showApiKeyInput, setShowApiKeyInput] = useState(false);
     const [addedQuests, setAddedQuests] = useState(new Set());
+    const [confirmingQuestId, setConfirmingQuestId] = useState(null);
     const textareaRef = useRef(null);
 
     useEffect(() => {
@@ -109,13 +110,19 @@ const AIQuestAssistant = ({
         // 2. Check if already exists in main quest log (Persistence state)
         const isDuplicate = existingQuests.some(q => q.title === quest.title);
 
-        if (isDuplicate) {
-            const confirmAdd = window.confirm(`The quest "${quest.title}" is already in your Quest Log. Do you want to add it again?`);
-            if (!confirmAdd) return;
+        // If it's a duplicate and we haven't confirmed it yet
+        if (isDuplicate && confirmingQuestId !== questId) {
+            setConfirmingQuestId(questId);
+            // Auto-clear confirmation after 3 seconds
+            setTimeout(() => {
+                setConfirmingQuestId(prev => prev === questId ? null : prev);
+            }, 3000);
+            return;
         }
 
         onAddQuest(quest);
         setAddedQuests(prev => new Set(prev).add(questId));
+        setConfirmingQuestId(null);
     };
 
     const handleAddAllQuests = (quests) => {
@@ -254,6 +261,7 @@ const AIQuestAssistant = ({
                                                 {msg.quests.map((quest, qIndex) => {
                                                     const questId = `${quest.title}-${qIndex}`;
                                                     const isAdded = addedQuests.has(questId);
+                                                    const isConfirming = confirmingQuestId === questId;
                                                     return (
                                                         <div key={qIndex} className="quest-preview">
                                                             <h4>{quest.title}</h4>
@@ -271,11 +279,12 @@ const AIQuestAssistant = ({
                                                                 </div>
                                                             )}
                                                             <button
-                                                                className={`btn btn-sm ${isAdded ? 'btn-secondary' : 'btn-success'}`}
+                                                                className={`btn btn-sm ${isAdded ? 'btn-secondary' : isConfirming ? 'btn-warning' : 'btn-success'}`}
+                                                                style={isConfirming ? { backgroundColor: 'var(--accent-warning)', borderColor: 'var(--accent-warning)' } : {}}
                                                                 onClick={() => handleAddQuest(quest, qIndex)}
                                                                 disabled={isAdded}
                                                             >
-                                                                {isAdded ? '✓ Added' : '+ Add Quest'}
+                                                                {isAdded ? '✓ Added' : isConfirming ? '⚠️ Add Duplicate?' : '+ Add Quest'}
                                                             </button>
                                                         </div>
                                                     );
@@ -286,20 +295,22 @@ const AIQuestAssistant = ({
                                                         onClick={() => handleAddAllQuests(msg.quests)}
                                                     >
                                                         + Add All Quests
-                                                    </button>
+                                                    </button >
                                                 )}
-                                            </div>
+                                            </div >
                                         )}
-                                    </div>
+                                    </div >
                                 ))}
-                                {isLoading && (
-                                    <div className="message assistant">
-                                        <div className="typing-indicator">
-                                            <span>.</span><span>.</span><span>.</span>
+                                {
+                                    isLoading && (
+                                        <div className="message assistant">
+                                            <div className="typing-indicator">
+                                                <span>.</span><span>.</span><span>.</span>
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
-                            </div>
+                                    )
+                                }
+                            </div >
 
                             <div className="chat-input">
                                 <textarea
@@ -322,8 +333,8 @@ const AIQuestAssistant = ({
                         </>
                     )
                 }
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 
