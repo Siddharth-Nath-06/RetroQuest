@@ -155,12 +155,52 @@ IMPORTANT: Ensure XP <= ${maxQuestXP} and Coins <= ${maxQuestCoins}`;
 };
 
 /**
- * Generate quests using Chrome Prompt API
+ * Create system prompt for item generation
  */
-const generateWithPromptAPI = async (userMessage, userContext, apiType = 'chrome-prompt-api') => {
+const createItemSystemPrompt = (userContext) => {
+    const { level, coins } = userContext;
+
+    return `You are a helpful RPG shopkeeper assistant for RetroQuest.
+Your role is to help users turn their REAL-WORLD rewards and treats into shop items they can buy with their hard-earned coins.
+
+USER CONTEXT:
+- Current Level: ${level}
+- Current Coins: ${coins}
+
+GUIDELINES:
+1. Create shop items based on real-life rewards the user wants (e.g., "watch a movie", "buy a coffee")
+2. Set BALANCED Coin costs based on quest rewards:
+   - Small treats/snacks (coffee, chocolate bar): 10-25 coins
+   - Medium rewards (movie ticket, meal out): 30-60 coins
+   - Larger experiences (spa day, concert): 80-150 coins
+   - Premium rewards (weekend trip, expensive item): 200+ coins
+   Remember: A 2-hour study session earns ~15-20 coins at level 1, so price accordingly!
+3. Assign one of these categories: "Snack", "Entertainment", "Experience", "Personal Care"
+4. Add a relevant emoji for the item
+5. Use encouraging, shopkeeper-style language
+
+RESPONSE FORMAT:
+Return ONLY valid JSON (no markdown, no code blocks) with this structure:
+{
+  "items": [
+    {
+      "name": "Item Name",
+      "description": "Description of the reward",
+      "cost": 100,
+      "category": "Snack",
+      "emoji": "☕"
+    }
+  ]
+}`;
+};
+
+/**
+ * Generate content using Chrome Prompt API
+ */
+const generateWithPromptAPI = async (userMessage, userContext, apiType = 'chrome-prompt-api', mode = 'quest') => {
     try {
         let session;
-        const systemPromptText = createSystemPrompt(userContext);
+        const systemPromptText = mode === 'item' ? createItemSystemPrompt(userContext) : createSystemPrompt(userContext);
 
         if (apiType === 'chrome-prompt-api') {
             // Try global LanguageModel first
@@ -204,6 +244,7 @@ const generateWithPromptAPI = async (userMessage, userContext, apiType = 'chrome
         return {
             success: true,
             quests: parsed.quests || [],
+            items: parsed.items || [],
             source: 'chrome-ai'
         };
     } catch (error) {
@@ -216,9 +257,9 @@ const generateWithPromptAPI = async (userMessage, userContext, apiType = 'chrome
 };
 
 /**
- * Generate quests using Gemini API
+ * Generate content using Gemini API
  */
-const generateWithGeminiAPI = async (userMessage, userContext) => {
+const generateWithGeminiAPI = async (userMessage, userContext, mode = 'quest') => {
     const apiKey = loadGeminiApiKey();
 
     if (!apiKey) {
@@ -229,7 +270,7 @@ const generateWithGeminiAPI = async (userMessage, userContext) => {
     }
 
     try {
-        const systemPrompt = createSystemPrompt(userContext);
+        const systemPrompt = mode === 'item' ? createItemSystemPrompt(userContext) : createSystemPrompt(userContext);
         const fullPrompt = `${systemPrompt}\n\nUSER REQUEST: ${userMessage}`;
 
         const response = await fetch(
@@ -275,6 +316,7 @@ const generateWithGeminiAPI = async (userMessage, userContext) => {
         return {
             success: true,
             quests: parsed.quests || [],
+            items: parsed.items || [],
             source: 'gemini-api'
         };
     } catch (error) {
@@ -290,11 +332,12 @@ const generateWithGeminiAPI = async (userMessage, userContext) => {
  * Main function to generate quests from user prompt
  * Automatically uses the best available AI method
  */
-export const generateQuestsFromPrompt = async (userMessage, userProfile) => {
+export const generateQuestsFromPrompt = async (userMessage, userProfile, mode = 'quest') => {
     // Prepare user context
     const level = Math.floor(userProfile.xp / 100) + 1;
     const userContext = {
         level,
+        coins: userProfile.coins,
         maxQuestXP: getMaxQuestXP(level),
         maxQuestCoins: getMaxQuestCoins(level)
     };
@@ -318,9 +361,9 @@ export const generateQuestsFromPrompt = async (userMessage, userProfile) => {
                 requiresDownload: true
             };
         }
-        return await generateWithPromptAPI(userMessage, userContext, capability.type);
+        return await generateWithPromptAPI(userMessage, userContext, capability.type, mode);
     } else if (capability.type === 'gemini-api') {
-        return await generateWithGeminiAPI(userMessage, userContext);
+        return await generateWithGeminiAPI(userMessage, userContext, mode);
     }
 
     return {

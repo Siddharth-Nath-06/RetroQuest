@@ -17,7 +17,7 @@ function App() {
   const [quests, setQuests] = useState(loadQuests());
   const [shopItems, setShopItems] = useState(loadShopItems());
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
-  const [newLevel, setNewLevel] = useState(1);
+  const [newLevel, setNewLevel] = useState(calculateLevel(userProfile.xp));
 
   // AI Assistant State (Lifted for persistence across tabs)
   const [aiMessages, setAiMessages] = useState([]);
@@ -55,11 +55,6 @@ function App() {
     }
   }, [userProfile.xp, newLevel]);
 
-  // Initialize level on mount
-  useEffect(() => {
-    setNewLevel(calculateLevel(userProfile.xp));
-  }, []);
-
   const addQuest = (quest) => {
     setQuests(prevQuests => [...prevQuests, { ...quest, id: Date.now().toString() + Math.random().toString(36).substr(2, 9), createdAt: new Date().toISOString(), status: 'active' }]);
   };
@@ -73,7 +68,7 @@ function App() {
   };
 
   const addShopItem = (item) => {
-    setShopItems([...shopItems, { ...item, id: Date.now().toString(), createdAt: new Date().toISOString() }]);
+    setShopItems(prevItems => [...prevItems, { ...item, id: Date.now().toString() + Math.random().toString(36).substr(2, 9), createdAt: new Date().toISOString() }]);
   };
 
   const updateShopItem = (updatedItem) => {
@@ -129,6 +124,8 @@ function App() {
             setGeneratedQuests={setAiGeneratedQuests}
             isLoading={isAiLoading}
             setIsLoading={setIsAiLoading}
+            onAddItem={addShopItem}
+            shopItems={shopItems}
           />
         );
       default:

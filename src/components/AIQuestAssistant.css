@@ -322,3 +322,114 @@
     font-style: italic;
     opacity: 0.7;
 }
+
+/* Mode Toggle */
+.mode-toggle-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.mode-toggle {
+    display: flex;
+    background-color: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+    padding: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.mode-btn {
+    padding: 8px 16px;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: var(--radius-full);
+    transition: all 0.2s ease;
+}
+
+.mode-btn:hover {
+    color: var(--text-primary);
+}
+
+.mode-btn.active {
+    background-color: var(--accent-primary);
+    color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Item Mode Specifics */
+.chat-intro.item-mode {
+    background: linear-gradient(135deg, rgba(156, 39, 176, 0.1), rgba(103, 58, 183, 0.1));
+    border-color: rgba(156, 39, 176, 0.3);
+}
+
+.chat-intro.item-mode p {
+    color: #e1bee7;
+}
+
+/* Item Preview Cards */
+.generated-items {
+    display: grid;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
+}
+
+.item-preview {
+    background-color: rgba(30, 30, 40, 0.6);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    transition: transform 0.2s ease;
+}
+
+.item-preview:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent-secondary);
+}
+
+.item-preview-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
+}
+
+.item-preview-header .item-emoji {
+    font-size: 1.5rem;
+}
+
+.item-preview-header h4 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.item-preview p {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-sm);
+    line-height: 1.4;
+}
+
+.item-preview-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+}
+
+.item-cost {
+    font-weight: bold;
+    color: var(--accent-warning);
+    font-size: 13px;
+}
+
+.item-category {
+    font-size: 10px;
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+}

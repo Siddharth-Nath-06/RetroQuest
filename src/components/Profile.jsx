@@ -12,7 +12,8 @@ const Profile = ({ userProfile, setUserProfile, profileAction, onActionHandled }
         quests: false,
         items: false,
         profile: false,
-        templates: false
+        templates: false,
+        purchaseHistory: false
     });
     const fileInputRef = useRef(null);
     const settingsRef = useRef(null);
@@ -82,6 +83,7 @@ const Profile = ({ userProfile, setUserProfile, profileAction, onActionHandled }
         if (wipeSelection.items) keysToWipe.push('SHOP_ITEMS');
         if (wipeSelection.profile) keysToWipe.push('USER_PROFILE');
         if (wipeSelection.templates) keysToWipe.push('TEMPLATES');
+        if (wipeSelection.purchaseHistory) keysToWipe.push('PURCHASE_HISTORY');
 
         if (keysToWipe.length === 0) {
             alert('Please select data to wipe.');
@@ -250,6 +252,15 @@ const Profile = ({ userProfile, setUserProfile, profileAction, onActionHandled }
                                 onChange={handleWipeSelectionChange}
                             />
                             Saved Templates
+                        </label>
+                        <label className="checkbox-label">
+                            <input
+                                type="checkbox"
+                                name="purchaseHistory"
+                                checked={wipeSelection.purchaseHistory}
+                                onChange={handleWipeSelectionChange}
+                            />
+                            Purchase History
                         </label>
                     </div>
                     <button className="btn btn-danger" onClick={handleWipeData}>

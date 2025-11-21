@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import './AIQuestAssistant.css';
 import { detectAICapability, checkChromeAIAvailability, generateQuestsFromPrompt } from '../utils/aiService';
 import { saveGeminiApiKey, loadGeminiApiKey, saveAiMethodPreference, loadAiMethodPreference } from '../utils/storage';
+import { SHOP_CATEGORIES } from '../utils/constants';
 
 const AIQuestAssistant = ({
     userProfile,
@@ -12,16 +13,21 @@ const AIQuestAssistant = ({
     generatedQuests,
     setGeneratedQuests,
     isLoading,
-    setIsLoading
+    setIsLoading,
+    onAddItem,
+    shopItems = []
 }) => {
     const [inputMessage, setInputMessage] = useState('');
     const [aiCapability, setAICapability] = useState(null);
     const [apiKey, setApiKey] = useState('');
     const [showApiKeyInput, setShowApiKeyInput] = useState(false);
     const [addedQuests, setAddedQuests] = useState(new Set());
+    const [addedItems, setAddedItems] = useState(new Set());
     const [confirmingQuestId, setConfirmingQuestId] = useState(null);
     const [chromeAIAvailable, setChromeAIAvailable] = useState(false);
     const [selectedMethod, setSelectedMethod] = useState(null);
+    const [generationMode, setGenerationMode] = useState('quest'); // 'quest' or 'item'
+    const [generatedItems, setGeneratedItems] = useState([]);
     const textareaRef = useRef(null);
     const messagesEndRef = useRef(null);
 
@@ -114,17 +120,30 @@ const AIQuestAssistant = ({
         }
 
         try {
-            const result = await generateQuestsFromPrompt(inputMessage, userProfile);
+            const result = await generateQuestsFromPrompt(inputMessage, userProfile, generationMode);
 
             if (result.success) {
-                const aiMsg = {
-                    role: 'assistant',
-                    content: `Hark! I have crafted ${result.quests.length} noble quest${result.quests.length > 1 ? 's' : ''} for thee! Review thy quests below and choose which to undertake.`,
-                    quests: result.quests,
-                    source: result.source
-                };
+                let aiMsg;
+                if (generationMode === 'quest') {
+                    aiMsg = {
+                        role: 'assistant',
+                        content: `Hark! I have crafted ${result.quests.length} noble quest${result.quests.length > 1 ? 's' : ''} for thee! Review thy quests below and choose which to undertake.`,
+                        quests: result.quests,
+                        source: result.source
+                    };
+                    setGeneratedQuests(result.quests);
+                    setGeneratedItems([]);
+                } else {
+                    aiMsg = {
+                        role: 'assistant',
+                        content: `I've found ${result.items.length} wonderful item${result.items.length > 1 ? 's' : ''} for your shop! Take a look below.`,
+                        items: result.items,
+                        source: result.source
+                    };
+                    setGeneratedItems(result.items);
+                    setGeneratedQuests([]);
+                }
                 setMessages(prev => [...prev, aiMsg]);
-                setGeneratedQuests(result.quests);
             } else {
                 const errorMsg = {
                     role: 'assistant',
@@ -143,6 +162,86 @@ const AIQuestAssistant = ({
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleAddItem = (item, index) => {
+        const itemId = `${item.name}-${index}`;
+
+        if (addedItems.has(itemId)) return;
+
+        // Check for duplicates in existing shop items
+        // Shop items use 'title', generated items use 'name'
+        const isDuplicate = shopItems.some(i => i.title === item.name);
+        if (isDuplicate && confirmingQuestId !== itemId) {
+            setConfirmingQuestId(itemId);
+            setTimeout(() => {
+                setConfirmingQuestId(prev => prev === itemId ? null : prev);
+            }, 3000);
+            return;
+        }
+
+        // Map category
+        let category = item.category;
+        const validCategories = Object.values(SHOP_CATEGORIES);
+        if (!validCategories.includes(category)) {
+            category = SHOP_CATEGORIES.MISC;
+        }
+
+        // Create new shop item
+        const newItem = {
+            ...item,
+            title: item.name, // Map name to title
+            category: category,
+            id: Date.now() + Math.random(),
+            purchased: false,
+            visible: true
+        };
+
+        onAddItem(newItem);
+        setAddedItems(prev => new Set(prev).add(itemId));
+        setConfirmingQuestId(null);
+    };
+
+    const handleAddAllItems = (items) => {
+        let newAdded = new Set(addedItems);
+        let addedCount = 0;
+        let skippedCount = 0;
+
+        items.forEach((item, index) => {
+            const itemId = `${item.name}-${index}`;
+
+            if (newAdded.has(itemId)) {
+                skippedCount++;
+                return;
+            }
+
+            const isDuplicate = shopItems.some(i => i.title === item.name);
+            if (isDuplicate) {
+                skippedCount++;
+                return;
+            }
+
+            let category = item.category;
+            const validCategories = Object.values(SHOP_CATEGORIES);
+            if (!validCategories.includes(category)) {
+                category = SHOP_CATEGORIES.MISC;
+            }
+
+            const newItem = {
+                ...item,
+                title: item.name,
+                category: category,
+                id: Date.now() + Math.random(),
+                purchased: false,
+                visible: true
+            };
+
+            onAddItem(newItem);
+            newAdded.add(itemId);
+            addedCount++;
+        });
+
+        setAddedItems(newAdded);
     };
 
     const handleAddQuest = (quest, index) => {
@@ -331,15 +430,47 @@ const AIQuestAssistant = ({
                         </div>
                     ) : (
                         <>
-                            <div className="chat-intro">
-                                <p>
-                                    Greetings, adventurer! Share your aspirations with me, and I shall forge legendary quests to guide your journey! Speak to me of your goals:
-                                </p>
-                                <ul>
-                                    <li>"I seek to master the ancient art of React"</li>
-                                    <li>"I wish to strengthen my body through training"</li>
-                                    <li>"My workspace requires order and discipline"</li>
-                                </ul>
+                            <div className="mode-toggle-container">
+                                <div className="mode-toggle">
+                                    <button
+                                        className={`mode-btn ${generationMode === 'quest' ? 'active' : ''}`}
+                                        onClick={() => setGenerationMode('quest')}
+                                    >
+                                        📜 Quest Mode
+                                    </button>
+                                    <button
+                                        className={`mode-btn ${generationMode === 'item' ? 'active' : ''}`}
+                                        onClick={() => setGenerationMode('item')}
+                                    >
+                                        ⚗️ Item Mode
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className={`chat-intro ${generationMode === 'item' ? 'item-mode' : ''}`}>
+                                {generationMode === 'quest' ? (
+                                    <>
+                                        <p>
+                                            Greetings, adventurer! Share your aspirations with me, and I shall forge legendary quests to guide your journey! Speak to me of your goals:
+                                        </p>
+                                        <ul>
+                                            <li>"I seek to master the ancient art of React"</li>
+                                            <li>"I wish to strengthen my body through training"</li>
+                                            <li>"My workspace requires order and discipline"</li>
+                                        </ul>
+                                    </>
+                                ) : (
+                                    <>
+                                        <p>
+                                            Welcome to the Item Forge! Tell me what real-world rewards you've earned or wish to buy, and I'll stock your shop with fine wares!
+                                        </p>
+                                        <ul>
+                                            <li>"I want to buy a movie ticket this weekend"</li>
+                                            <li>"I have a chocolate bar I want to earn"</li>
+                                            <li>"I need a spa day reward"</li>
+                                        </ul>
+                                    </>
+                                )}
                                 <div className="chat-warning">
                                     ⚠️ <strong>Note:</strong> Chat history is not saved and will be lost on page reload or browser close.
                                 </div>
@@ -397,28 +528,74 @@ const AIQuestAssistant = ({
                                                         + Add All Quests
                                                     </button >
                                                 )}
-                                            </div >
+                                            </div>
                                         )}
-                                    </div >
+                                        {msg.items && msg.items.length > 0 && (
+                                            <div className="generated-items">
+                                                {msg.items.map((item, iIndex) => {
+                                                    const itemId = `${item.name}-${iIndex}`;
+                                                    const isAdded = addedItems.has(itemId);
+                                                    const isConfirming = confirmingQuestId === itemId;
+                                                    return (
+                                                        <div key={iIndex} className="item-preview">
+                                                            <div className="item-preview-header">
+                                                                <span className="item-emoji">{item.emoji}</span>
+                                                                <h4>{item.name}</h4>
+                                                            </div>
+                                                            <p>{item.description}</p>
+                                                            <div className="item-preview-details">
+                                                                <span className="item-cost">{item.cost} 💰</span>
+                                                                <span className="item-category badge">{item.category}</span>
+                                                            </div>
+                                                            <button
+                                                                className={`btn btn-sm ${isAdded ? 'btn-secondary' : isConfirming ? 'btn-warning' : 'btn-success'}`}
+                                                                style={isConfirming ? { backgroundColor: 'var(--accent-warning)', borderColor: 'var(--accent-warning)' } : {}}
+                                                                onClick={() => handleAddItem(item, iIndex)}
+                                                                disabled={isAdded}
+                                                            >
+                                                                {isAdded ? '✓ Added' : isConfirming ? '⚠️ Add Duplicate?' : '+ Add to Shop'}
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })}
+                                                {msg.items.length > 1 && (
+                                                    <button
+                                                        className="btn btn-primary"
+                                                        onClick={() => handleAddAllItems(msg.items)}
+                                                    >
+                                                        + Add All Items
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                 ))}
                                 {messages.length === 0 && !isLoading && (
                                     <div className="empty-chat-state">
-                                        <div className="empty-chat-icon">💬</div>
-                                        <p>Your conversation with the Quest Master will appear here.</p>
-                                        <p className="empty-chat-hint">Start by describing your goals or tasks below!</p>
+                                        <div className="empty-chat-icon">
+                                            {generationMode === 'quest' ? '💬' : '⚗️'}
+                                        </div>
+                                        <p>
+                                            {generationMode === 'quest'
+                                                ? "Your conversation with the Quest Master will appear here."
+                                                : "Your item forging session will appear here."}
+                                        </p>
+                                        <p className="empty-chat-hint">
+                                            {generationMode === 'quest'
+                                                ? "Start by describing your goals or tasks below!"
+                                                : "Describe the rewards you want to add to your shop!"}
+                                        </p>
                                     </div>
                                 )}
-                                {
-                                    isLoading && (
-                                        <div className="message assistant">
-                                            <div className="typing-indicator">
-                                                <span>.</span><span>.</span><span>.</span>
-                                            </div>
+                                {isLoading && (
+                                    <div className="message assistant">
+                                        <div className="typing-indicator">
+                                            <span>.</span><span>.</span><span>.</span>
                                         </div>
-                                    )
-                                }
+                                    </div>
+                                )}
                                 <div ref={messagesEndRef} />
-                            </div >
+                            </div>
 
                             <div className="chat-input">
                                 <textarea
@@ -426,7 +603,7 @@ const AIQuestAssistant = ({
                                     value={inputMessage}
                                     onChange={(e) => setInputMessage(e.target.value)}
                                     onKeyDown={handleKeyDown}
-                                    placeholder="Speak your quest, brave adventurer..."
+                                    placeholder={generationMode === 'quest' ? "Speak your quest, brave adventurer..." : "Describe the rewards you seek..."}
                                     disabled={isLoading}
                                     rows={1}
                                 />
@@ -435,14 +612,14 @@ const AIQuestAssistant = ({
                                     onClick={handleSendMessage}
                                     disabled={isLoading || !inputMessage.trim()}
                                 >
-                                    ⚔️ Seek Quests
+                                    {generationMode === 'quest' ? "⚔️ Seek Quests" : "⚗️ Forge Items"}
                                 </button>
                             </div>
                         </>
                     )
                 }
-            </div >
-        </div >
+            </div>
+        </div>
     );
 };
 

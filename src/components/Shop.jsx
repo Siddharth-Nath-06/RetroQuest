@@ -3,6 +3,7 @@ import './Shop.css';
 import { SHOP_CATEGORIES, CATEGORY_ICONS, BUILT_IN_SHOP_TEMPLATES } from '../utils/constants';
 import { validateShopItemForm } from '../utils/validation';
 import { useDebounce } from '../hooks/useDebounce';
+import { loadPurchaseHistory, addPurchaseToHistory } from '../utils/storage';
 
 const Shop = ({ shopItems, userProfile, onAddShopItem, onUpdateShopItem, onDeleteShopItem, setUserProfile }) => {
     const [showForm, setShowForm] = useState(false);
@@ -17,6 +18,8 @@ const Shop = ({ shopItems, userProfile, onAddShopItem, onUpdateShopItem, onDelet
     });
     const [formErrors, setFormErrors] = useState({});
     const [purchaseFeedback, setPurchaseFeedback] = useState(null);
+    const [purchaseHistory, setPurchaseHistory] = useState(loadPurchaseHistory());
+    const [showHistory, setShowHistory] = useState(false);
 
     const { debouncedCallback } = useDebounce((item) => {
         purchaseItemAction(item);
@@ -96,6 +99,15 @@ const Shop = ({ shopItems, userProfile, onAddShopItem, onUpdateShopItem, onDelet
             coins: userProfile.coins - item.cost
         });
 
+        // Add to purchase history
+        const purchase = {
+            title: item.title,
+            cost: item.cost,
+            purchasedAt: new Date().toISOString()
+        };
+        addPurchaseToHistory(purchase);
+        setPurchaseHistory(loadPurchaseHistory());
+
         // Show purchase feedback
         setPurchaseFeedback({
             title: item.title,
@@ -140,6 +152,9 @@ const Shop = ({ shopItems, userProfile, onAddShopItem, onUpdateShopItem, onDelet
                                 <option value="price-desc">Price (High to Low)</option>
                             </select>
                         </div>
+                        <button className="btn btn-secondary btn-sm" onClick={() => setShowHistory(!showHistory)}>
+                            {showHistory ? 'Hide' : 'View'} Purchase History
+                        </button>
                         <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
                             {showForm ? 'Cancel' : '+ New Item'}
                         </button>
@@ -234,6 +249,31 @@ const Shop = ({ shopItems, userProfile, onAddShopItem, onUpdateShopItem, onDelet
             {purchaseFeedback && (
                 <div className="purchase-feedback bounce-animation">
                     {CATEGORY_ICONS[purchaseFeedback.category]} Item bought: {purchaseFeedback.title}
+                </div>
+            )}
+
+            {showHistory && (
+                <div className="panel purchase-history-panel">
+                    <h3>📜 Purchase History</h3>
+                    {purchaseHistory.length > 0 ? (
+                        <div className="purchase-history-list">
+                            {purchaseHistory.map((purchase, index) => (
+                                <div key={index} className="purchase-history-item">
+                                    <div className="purchase-info">
+                                        <span className="purchase-title">{purchase.title}</span>
+                                        <span className="purchase-cost">💰 {purchase.cost}</span>
+                                    </div>
+                                    <div className="purchase-date">
+                                        {new Date(purchase.purchasedAt).toLocaleString()}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="empty-state">
+                            <p>No purchases yet. Start completing quests to earn coins!</p>
+                        </div>
+                    )}
                 </div>
             )}
 

@@ -4,6 +4,7 @@ const STORAGE_KEYS = {
     USER_PROFILE: 'retroquest_user_profile',
     QUESTS: 'retroquest_quests',
     SHOP_ITEMS: 'retroquest_shop_items',
+    PURCHASE_HISTORY: 'retroquest_purchase_history',
     TEMPLATES: 'retroquest_templates',
     GEMINI_API_KEY: 'retroquest_gemini_api_key',
     AI_METHOD_PREFERENCE: 'retroquest_ai_method_preference'
@@ -141,6 +142,39 @@ export const loadAiMethodPreference = () => {
     } catch (error) {
         console.error('Error loading AI method preference:', error);
         return null;
+    }
+};
+
+// Purchase History
+export const savePurchaseHistory = (history) => {
+    try {
+        localStorage.setItem(STORAGE_KEYS.PURCHASE_HISTORY, JSON.stringify(history));
+        return true;
+    } catch (error) {
+        console.error('Error saving purchase history:', error);
+        return false;
+    }
+};
+
+export const loadPurchaseHistory = () => {
+    try {
+        const data = localStorage.getItem(STORAGE_KEYS.PURCHASE_HISTORY);
+        return data ? JSON.parse(data) : [];
+    } catch (error) {
+        console.error('Error loading purchase history:', error);
+        return [];
+    }
+};
+
+export const addPurchaseToHistory = (purchase) => {
+    try {
+        const history = loadPurchaseHistory();
+        history.unshift(purchase); // Add to beginning
+        savePurchaseHistory(history);
+        return true;
+    } catch (error) {
+        console.error('Error adding purchase to history:', error);
+        return false;
     }
 };
 
