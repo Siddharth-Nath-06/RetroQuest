@@ -18,6 +18,10 @@ function App() {
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
   const [newLevel, setNewLevel] = useState(1);
 
+  // AI Assistant State (Lifted for persistence across tabs)
+  const [aiMessages, setAiMessages] = useState([]);
+  const [aiGeneratedQuests, setAiGeneratedQuests] = useState([]);
+
   // Save user profile when it changes
   useEffect(() => {
     saveUserProfile(userProfile);
@@ -48,7 +52,7 @@ function App() {
   }, []);
 
   const addQuest = (quest) => {
-    setQuests([...quests, { ...quest, id: Date.now().toString(), createdAt: new Date().toISOString(), status: 'active' }]);
+    setQuests(prevQuests => [...prevQuests, { ...quest, id: Date.now().toString() + Math.random().toString(36).substr(2, 9), createdAt: new Date().toISOString(), status: 'active' }]);
   };
 
   const updateQuest = (updatedQuest) => {
@@ -107,6 +111,10 @@ function App() {
           <AIQuestAssistant
             userProfile={userProfile}
             onAddQuest={addQuest}
+            messages={aiMessages}
+            setMessages={setAiMessages}
+            generatedQuests={aiGeneratedQuests}
+            setGeneratedQuests={setAiGeneratedQuests}
           />
         );
       default:
