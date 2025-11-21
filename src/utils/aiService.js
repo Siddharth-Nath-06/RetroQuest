@@ -7,17 +7,42 @@ import { getMaxQuestXP, getMaxQuestCoins } from './levelSystem.js';
  * Detect if Chrome's built-in Prompt API is available
  */
 export const detectAICapability = async () => {
-    // Check for window.ai (Chrome Prompt API)
-    if (typeof window !== 'undefined' && window.ai) {
+    // Check for global LanguageModel API (Newest)
+    if (typeof window !== 'undefined' && 'LanguageModel' in window) {
         try {
-            const canCreateSession = await window.ai.canCreateSession();
-            if (canCreateSession === 'readily') {
+            // @ts-ignore - LanguageModel is experimental
+            const availability = await window.LanguageModel.availability();
+            // Check for various positive states based on user feedback and docs
+            if (availability === 'readily' || availability === 'available') {
                 return { available: true, type: 'chrome-prompt-api' };
-            } else if (canCreateSession === 'after-download') {
+            } else if (availability === 'after-download') {
                 return { available: true, type: 'chrome-prompt-api', requiresDownload: true };
             }
         } catch (error) {
-            console.log('Chrome Prompt API not available:', error);
+            console.log('Chrome LanguageModel API check failed:', error);
+        }
+    }
+
+    // Fallback: Check for window.ai (Legacy/Alternative)
+    if (typeof window !== 'undefined' && window.ai) {
+        try {
+            if (window.ai.languageModel) {
+                const availability = await window.ai.languageModel.availability();
+                if (availability === 'readily') {
+                    return { available: true, type: 'chrome-prompt-api' };
+                } else if (availability === 'after-download') {
+                    return { available: true, type: 'chrome-prompt-api', requiresDownload: true };
+                }
+            } else if (window.ai.canCreateSession) {
+                const canCreateSession = await window.ai.canCreateSession();
+                if (canCreateSession === 'readily') {
+                    return { available: true, type: 'chrome-prompt-api-legacy' };
+                } else if (canCreateSession === 'after-download') {
+                    return { available: true, type: 'chrome-prompt-api-legacy', requiresDownload: true };
+                }
+            }
+        } catch (error) {
+            console.log('Legacy window.ai check failed:', error);
         }
     }
 
@@ -74,17 +99,49 @@ IMPORTANT: Ensure XP <= ${maxQuestXP} and Coins <= ${maxQuestCoins}`;
 /**
  * Generate quests using Chrome Prompt API
  */
-const generateWithPromptAPI = async (userMessage, userContext) => {
+const generateWithPromptAPI = async (userMessage, userContext, apiType = 'chrome-prompt-api') => {
     try {
-        const session = await window.ai.createSession({
-            systemPrompt: createSystemPrompt(userContext)
-        });
+        let session;
+        const systemPromptText = createSystemPrompt(userContext);
+
+        if (apiType === 'chrome-prompt-api') {
+            // Try global LanguageModel first
+            if ('LanguageModel' in window) {
+                // @ts-ignore
+                session = await window.LanguageModel.create({
+                    initialPrompts: [
+                        { role: 'system', content: systemPromptText }
+                    ]
+                });
+            } else if (window.ai?.languageModel) {
+                // Fallback to window.ai.languageModel
+                session = await window.ai.languageModel.create({
+                    initialPrompts: [
+                        { role: 'system', content: systemPromptText }
+                    ]
+                });
+            }
+        } else {
+            // Legacy API (window.ai.createSession)
+            session = await window.ai.createSession({
+                systemPrompt: systemPromptText
+            });
+        }
+
+        if (!session) {
+            throw new Error('Failed to create AI session');
+        }
 
         const response = await session.prompt(userMessage);
 
         // Parse the JSON response
         const cleanedResponse = response.trim().replace(/```json\n?|\n?```/g, '');
         const parsed = JSON.parse(cleanedResponse);
+
+        // Clean up session if destroy method exists
+        if (session.destroy) {
+            session.destroy();
+        }
 
         return {
             success: true,
@@ -187,7 +244,7 @@ export const generateQuestsFromPrompt = async (userMessage, userProfile) => {
     }
 
     // Use appropriate AI method
-    if (capability.type === 'chrome-prompt-api') {
+    if (capability.type === 'chrome-prompt-api' || capability.type === 'chrome-prompt-api-legacy') {
         if (capability.requiresDownload) {
             return {
                 success: false,
@@ -195,7 +252,7 @@ export const generateQuestsFromPrompt = async (userMessage, userProfile) => {
                 requiresDownload: true
             };
         }
-        return await generateWithPromptAPI(userMessage, userContext);
+        return await generateWithPromptAPI(userMessage, userContext, capability.type);
     } else if (capability.type === 'gemini-api') {
         return await generateWithGeminiAPI(userMessage, userContext);
     }
