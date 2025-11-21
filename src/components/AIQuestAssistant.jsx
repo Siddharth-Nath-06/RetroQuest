@@ -64,18 +64,23 @@ const AIQuestAssistant = ({
         }
     }, [messages, isLoading]);
 
-    const handleSaveApiKey = () => {
+    const handleSaveApiKey = async () => {
         saveGeminiApiKey(apiKey);
         saveAiMethodPreference('gemini-api');
         setShowApiKeyInput(false);
-        window.location.reload(); // Reload to detect new capability
+        // Re-detect AI capability with new preference
+        const capability = await detectAICapability('gemini-api');
+        setAICapability(capability);
     };
 
     const handleSelectChromeAI = async () => {
         const available = await checkChromeAIAvailability();
         if (available) {
             saveAiMethodPreference('chrome-ai');
-            window.location.reload();
+            // Re-detect AI capability with new preference
+            const capability = await detectAICapability('chrome-ai');
+            setAICapability(capability);
+            setShowApiKeyInput(false);
         } else {
             alert('Chrome AI is not available on this browser. Please check the setup instructions or use Gemini API instead.');
         }
@@ -329,6 +334,9 @@ const AIQuestAssistant = ({
                                     <li>"I wish to strengthen my body through training"</li>
                                     <li>"My workspace requires order and discipline"</li>
                                 </ul>
+                                <div className="chat-warning">
+                                    ⚠️ <strong>Note:</strong> Chat history is not saved and will be lost on page reload or browser close.
+                                </div>
                             </div>
 
                             <div className="chat-messages">
@@ -387,6 +395,13 @@ const AIQuestAssistant = ({
                                         )}
                                     </div >
                                 ))}
+                                {messages.length === 0 && !isLoading && (
+                                    <div className="empty-chat-state">
+                                        <div className="empty-chat-icon">💬</div>
+                                        <p>Your conversation with the Quest Master will appear here.</p>
+                                        <p className="empty-chat-hint">Start by describing your goals or tasks below!</p>
+                                    </div>
+                                )}
                                 {
                                     isLoading && (
                                         <div className="message assistant">
