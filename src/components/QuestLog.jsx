@@ -142,8 +142,8 @@ const QuestLog = ({ quests, userProfile, onAddQuest, onUpdateQuest, onDeleteQues
         });
     };
 
-    // Get all unique tags from all quests
-    const allTags = [...new Set(quests.flatMap(q => q.tags || []))];
+    // Get all unique tags from all quests and sort alphabetically
+    const allTags = [...new Set(quests.flatMap(q => q.tags || []))].sort();
 
     // Apply filtering and sorting
     let processedQuests = [...quests];
