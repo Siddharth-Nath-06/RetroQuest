@@ -1,31 +1,67 @@
 // Level system and cap calculations for RetroQuest
 
 /**
- * Calculate level from total XP
- * Formula: level = floor(xp / 100) + 1
+ * Calculate level from total XP using exponential scaling
+ * Formula: Level = floor(log((XP / 100) * (multiplier - 1) + 1) / log(multiplier)) + 1
+ * Base XP for Level 1 -> 2: 100
+ * Multiplier: 1.5
  */
+const BASE_XP = 100;
+const MULTIPLIER = 1.5;
+
 export const calculateLevel = (xp) => {
-    return Math.floor(xp / 100) + 1;
+    if (xp < 0) return 1;
+    // Inverse of the sum of geometric series
+    // XP = 100 * (1.5^(level-1) - 1) / (1.5 - 1)
+    // XP * 0.5 / 100 = 1.5^(level-1) - 1
+    // (XP / 200) + 1 = 1.5^(level-1)
+    // log1.5((XP / 200) + 1) = level - 1
+    return Math.floor(Math.log((xp / (BASE_XP / (MULTIPLIER - 1))) + 1) / Math.log(MULTIPLIER)) + 1;
 };
 
 /**
- * Calculate XP needed for next level
+ * Calculate total XP required to reach a specific level
+ */
+export const getXPForLevel = (level) => {
+    if (level <= 1) return 0;
+    // Sum of geometric series: S_n = a(r^n - 1) / (r - 1)
+    // Here n = level - 1 (since we start at level 1 with 0 XP)
+    return Math.floor(BASE_XP * (Math.pow(MULTIPLIER, level - 1) - 1) / (MULTIPLIER - 1));
+};
+
+/**
+ * Get detailed stats for the current level
+ */
+export const getLevelStats = (currentXP) => {
+    const level = calculateLevel(currentXP);
+    const startXP = getXPForLevel(level);
+    const endXP = getXPForLevel(level + 1);
+
+    const levelXP = currentXP - startXP;
+    const nextLevelXP = endXP - startXP;
+    const progress = (levelXP / nextLevelXP) * 100;
+
+    return {
+        level,
+        levelXP,
+        nextLevelXP,
+        progress: Math.min(100, Math.max(0, progress))
+    };
+};
+
+/**
+ * Calculate XP needed for next level (Remaining XP)
  */
 export const getXPForNextLevel = (currentXP) => {
-    const currentLevel = calculateLevel(currentXP);
-    const nextLevelXP = (currentLevel) * 100;
-    return nextLevelXP - currentXP;
+    const stats = getLevelStats(currentXP);
+    return stats.nextLevelXP - stats.levelXP;
 };
 
 /**
  * Get progress percentage to next level
  */
 export const getLevelProgress = (currentXP) => {
-    const currentLevel = calculateLevel(currentXP);
-    const prevLevelXP = (currentLevel - 1) * 100;
-    const nextLevelXP = currentLevel * 100;
-    const progress = ((currentXP - prevLevelXP) / (nextLevelXP - prevLevelXP)) * 100;
-    return Math.min(100, Math.max(0, progress));
+    return getLevelStats(currentXP).progress;
 };
 
 /**

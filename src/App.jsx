@@ -12,6 +12,7 @@ import { calculateLevel } from './utils/levelSystem';
 
 function App() {
   const [currentTab, setCurrentTab] = useState('Quest Log');
+  const [profileAction, setProfileAction] = useState(null);
   const [userProfile, setUserProfile] = useState(loadUserProfile());
   const [quests, setQuests] = useState(loadQuests());
   const [shopItems, setShopItems] = useState(loadShopItems());
@@ -22,6 +23,13 @@ function App() {
   const [aiMessages, setAiMessages] = useState([]);
   const [aiGeneratedQuests, setAiGeneratedQuests] = useState([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
+
+  const handleTabChange = (tab, action = null) => {
+    setCurrentTab(tab);
+    if (action) {
+      setProfileAction(action);
+    }
+  };
 
   // Save user profile when it changes
   useEffect(() => {
@@ -41,7 +49,7 @@ function App() {
   // Check for level up
   useEffect(() => {
     const currentLevel = calculateLevel(userProfile.xp);
-    if (currentLevel > newLevel && newLevel > 1) {
+    if (currentLevel > newLevel) {
       setNewLevel(currentLevel);
       setShowLevelUpModal(true);
     }
@@ -105,6 +113,8 @@ function App() {
           <Profile
             userProfile={userProfile}
             setUserProfile={setUserProfile}
+            profileAction={profileAction}
+            onActionHandled={() => setProfileAction(null)}
           />
         );
       case 'Quest Master':
@@ -131,7 +141,7 @@ function App() {
       <Header
         userProfile={userProfile}
         currentTab={currentTab}
-        onTabChange={setCurrentTab}
+        onTabChange={handleTabChange}
       />
       <main className="app-content">
         {renderCurrentTab()}

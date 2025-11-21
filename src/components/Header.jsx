@@ -1,40 +1,52 @@
 import React from 'react';
 import './Header.css';
-import { calculateLevel } from '../utils/levelSystem';
+import { calculateLevel, getLevelStats } from '../utils/levelSystem';
 
 const Header = ({ userProfile, currentTab, onTabChange }) => {
-    const level = calculateLevel(userProfile.xp);
+    const stats = getLevelStats(userProfile.xp);
 
     return (
         <header className="header">
             <div className="header-title">
                 <h1>⚔️ RetroQuest</h1>
-                <div className='profile-n-stats'>
-                    <div className="stats-display">
-                        <div className="stat">
-                            <span className="stat-label">Level</span>
-                            <span className="stat-value">{level}</span>
+                <div className='miniview'>
+                    <div className='profile-n-stats'>
+                        <div className="stats-display">
+                            <div className="stat">
+                                <span className="stat-label">Level</span>
+                                <span className="stat-value">{stats.level}</span>
+                            </div>
+                            <div className="stat">
+                                <span className="stat-label">XP</span>
+                                <div className="xp-fraction-display">
+                                    <span className="xp-current">{Math.round(stats.levelXP)}</span>
+                                    <span className="xp-divider">/</span>
+                                    <span className="xp-total">{Math.round(stats.nextLevelXP)}</span>
+                                </div>
+                            </div>
+                            <div className="stat">
+                                <span className="stat-label">Coins</span>
+                                <span className="stat-value">{userProfile.coins}</span>
+                            </div>
                         </div>
-                        <div className="stat">
-                            <span className="stat-label">XP</span>
-                            <span className="stat-value">{userProfile.xp}</span>
-                        </div>
-                        <div className="stat">
-                            <span className="stat-label">Coins</span>
-                            <span className="stat-value">{userProfile.coins}</span>
+                        <div
+                            className="user-profile-mini"
+                            onClick={() => onTabChange('Profile', 'scrollToSettings')}
+                            role="button"
+                            tabIndex={0}
+                        >
+                            <span className="avatar-mini">{userProfile.avatar}</span>
+                            <div className="user-info-mini">
+                                <div className="username-mini">{userProfile.displayName}</div>
+                                <div className="class-mini">{userProfile.class}</div>
+                            </div>
                         </div>
                     </div>
-                    <div
-                        className="user-profile-mini"
-                        onClick={() => onTabChange('Profile')}
-                        role="button"
-                        tabIndex={0}
-                    >
-                        <span className="avatar-mini">{userProfile.avatar}</span>
-                        <div className="user-info-mini">
-                            <div className="username-mini">{userProfile.displayName}</div>
-                            <div className="class-mini">{userProfile.class}</div>
-                        </div>
+                    <div className="level-progress-container" title={`Progress to Level ${stats.level + 1}: ${Math.round(stats.progress)}%`}>
+                        <div
+                            className="level-progress-bar"
+                            style={{ width: `${stats.progress}%` }}
+                        />
                     </div>
                 </div>
             </div>

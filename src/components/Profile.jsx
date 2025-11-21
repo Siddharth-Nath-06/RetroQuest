@@ -1,10 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './Profile.css';
 import { AVATAR_EMOJIS, CHARACTER_CLASSES } from '../utils/constants';
 import { calculateLevel, getMaxQuestXP, getMaxQuestCoins, getGlobalXPCap, getGlobalCoinCap } from '../utils/levelSystem';
 import { exportData, importData, wipeData, STORAGE_KEYS } from '../utils/storage';
 
-const Profile = ({ userProfile, setUserProfile }) => {
+const Profile = ({ userProfile, setUserProfile, profileAction, onActionHandled }) => {
     const [displayName, setDisplayName] = useState(userProfile.displayName);
     const [selectedClass, setSelectedClass] = useState(userProfile.class);
     const [selectedAvatar, setSelectedAvatar] = useState(userProfile.avatar);
@@ -15,8 +15,16 @@ const Profile = ({ userProfile, setUserProfile }) => {
         templates: false
     });
     const fileInputRef = useRef(null);
+    const settingsRef = useRef(null);
 
     const level = calculateLevel(userProfile.xp);
+
+    useEffect(() => {
+        if (profileAction === 'scrollToSettings' && settingsRef.current) {
+            settingsRef.current.scrollIntoView({ behavior: 'smooth' });
+            onActionHandled();
+        }
+    }, [profileAction, onActionHandled]);
 
     const handleExport = () => {
         const data = exportData();
@@ -135,7 +143,7 @@ const Profile = ({ userProfile, setUserProfile }) => {
                 </div>
             </div>
 
-            <div className="panel">
+            <div className="panel" ref={settingsRef}>
                 <div className="panel-header">
                     <h2>⚙️ Profile Settings</h2>
                 </div>
