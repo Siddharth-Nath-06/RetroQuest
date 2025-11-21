@@ -4,9 +4,67 @@ import { loadGeminiApiKey } from './storage.js';
 import { getMaxQuestXP, getMaxQuestCoins } from './levelSystem.js';
 
 /**
+ * Check if Chrome's built-in AI is available (for UI button state)
+ */
+export const checkChromeAIAvailability = async () => {
+    // Check for global LanguageModel API (Newest)
+    if (typeof window !== 'undefined' && 'LanguageModel' in window) {
+        try {
+            // @ts-ignore - LanguageModel is experimental
+            const availability = await window.LanguageModel.availability();
+            if (availability === 'readily' || availability === 'available' || availability === 'after-download') {
+                return true;
+            }
+        } catch (error) {
+            console.log('Chrome LanguageModel API check failed:', error);
+        }
+    }
+
+    // Fallback: Check for window.ai (Legacy/Alternative)
+    if (typeof window !== 'undefined' && window.ai) {
+        try {
+            if (window.ai.languageModel) {
+                const availability = await window.ai.languageModel.availability();
+                if (availability === 'readily' || availability === 'after-download') {
+                    return true;
+                }
+            } else if (window.ai.canCreateSession) {
+                const canCreateSession = await window.ai.canCreateSession();
+                if (canCreateSession === 'readily' || canCreateSession === 'after-download') {
+                    return true;
+                }
+            }
+        } catch (error) {
+            console.log('Legacy window.ai check failed:', error);
+        }
+    }
+
+    return false;
+};
+
+/**
  * Detect if Chrome's built-in Prompt API is available
  */
-export const detectAICapability = async () => {
+export const detectAICapability = async (preferredMethod = null) => {
+    // If user prefers Chrome AI specifically
+    if (preferredMethod === 'chrome-ai') {
+        const chromeAvailable = await checkChromeAIAvailability();
+        if (chromeAvailable) {
+            return { available: true, type: 'chrome-prompt-api' };
+        }
+        return { available: false, type: null };
+    }
+
+    // If user prefers Gemini API specifically
+    if (preferredMethod === 'gemini-api') {
+        const apiKey = loadGeminiApiKey();
+        if (apiKey && apiKey.trim() !== '') {
+            return { available: true, type: 'gemini-api' };
+        }
+        return { available: false, type: null };
+    }
+
+    // Auto-detection (no preference): Try Chrome first, then Gemini API
     // Check for global LanguageModel API (Newest)
     if (typeof window !== 'undefined' && 'LanguageModel' in window) {
         try {

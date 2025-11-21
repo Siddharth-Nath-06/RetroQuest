@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './AIQuestAssistant.css';
-import { detectAICapability, generateQuestsFromPrompt } from '../utils/aiService';
-import { saveGeminiApiKey, loadGeminiApiKey } from '../utils/storage';
+import { detectAICapability, checkChromeAIAvailability, generateQuestsFromPrompt } from '../utils/aiService';
+import { saveGeminiApiKey, loadGeminiApiKey, saveAiMethodPreference, loadAiMethodPreference } from '../utils/storage';
 
 const AIQuestAssistant = ({
     userProfile,
@@ -20,18 +20,28 @@ const AIQuestAssistant = ({
     const [showApiKeyInput, setShowApiKeyInput] = useState(false);
     const [addedQuests, setAddedQuests] = useState(new Set());
     const [confirmingQuestId, setConfirmingQuestId] = useState(null);
+    const [chromeAIAvailable, setChromeAIAvailable] = useState(false);
+    const [selectedMethod, setSelectedMethod] = useState(null);
     const textareaRef = useRef(null);
     const messagesEndRef = useRef(null);
 
     useEffect(() => {
         const checkAI = async () => {
-            const capability = await detectAICapability();
+            // Check Chrome AI availability for button state
+            const chromeAvailable = await checkChromeAIAvailability();
+            setChromeAIAvailable(chromeAvailable);
+
+            // Load user's preferred method
+            const preferredMethod = loadAiMethodPreference();
+
+            // Detect AI capability based on preference
+            const capability = await detectAICapability(preferredMethod);
             setAICapability(capability);
 
             if (!capability.available) {
                 const savedKey = loadGeminiApiKey();
                 setApiKey(savedKey);
-                if (!savedKey) {
+                if (!savedKey && !preferredMethod) {
                     setShowApiKeyInput(true);
                 }
             }
@@ -56,8 +66,29 @@ const AIQuestAssistant = ({
 
     const handleSaveApiKey = () => {
         saveGeminiApiKey(apiKey);
+        saveAiMethodPreference('gemini-api');
         setShowApiKeyInput(false);
         window.location.reload(); // Reload to detect new capability
+    };
+
+    const handleSelectChromeAI = async () => {
+        const available = await checkChromeAIAvailability();
+        if (available) {
+            saveAiMethodPreference('chrome-ai');
+            window.location.reload();
+        } else {
+            alert('Chrome AI is not available on this browser. Please check the setup instructions or use Gemini API instead.');
+        }
+    };
+
+    const handleSelectGeminiAPI = () => {
+        setSelectedMethod('gemini-api');
+    };
+
+    const handleResetAIMethod = () => {
+        setAICapability(null);
+        setShowApiKeyInput(true);
+        setSelectedMethod(null);
     };
 
     const handleSendMessage = async () => {
@@ -190,6 +221,13 @@ const AIQuestAssistant = ({
                             ) : (
                                 <span className="status-badge offline">Not Connected</span>
                             )}
+                            <button
+                                className="btn btn-sm change-method-btn"
+                                onClick={handleResetAIMethod}
+                                title="Change AI Method"
+                            >
+                                🔄 Change Method
+                            </button>
                         </div>
                     )}
                 </div>
@@ -198,47 +236,86 @@ const AIQuestAssistant = ({
                     !aiCapability?.available && showApiKeyInput ? (
                         <div className="api-key-setup">
                             <h3>⚔️ Summon the Quest Master</h3>
-                            <p>To receive quests from the Quest Master, choose one of these magical connections:</p>
+                            <p>Choose your preferred AI method to begin generating quests:</p>
 
-                            <div className="setup-method">
-                                <h4>☁️ Method 1: Gemini API Key (Recommended - Works Reliably)</h4>
-                                <p>Free and easy to set up:</p>
-                                <ol>
-                                    <li>Visit <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a></li>
-                                    <li>Click "Create API Key" (requires Google account)</li>
-                                    <li>Copy your API key and paste it below</li>
-                                    <li>Click "Activate Connection"</li>
-                                </ol>
-                                <div className="form-group">
-                                    <label>🗝️ Gemini API Key</label>
-                                    <input
-                                        type="password"
-                                        value={apiKey}
-                                        onChange={(e) => setApiKey(e.target.value)}
-                                        placeholder="Enter your magical key"
-                                    />
+                            {!selectedMethod ? (
+                                <div className="method-selection-buttons">
+                                    <button
+                                        className="btn btn-lg method-choice-card"
+                                        onClick={handleSelectChromeAI}
+                                        disabled={!chromeAIAvailable}
+                                        title={chromeAIAvailable ? "Use Chrome's built-in AI" : "Chrome AI not available"}
+                                    >
+                                        <div className="method-icon">🔮</div>
+                                        <div className="method-title">Chrome AI</div>
+                                        <div className="method-description">
+                                            {chromeAIAvailable ?
+                                                "Built-in, private, offline" :
+                                                "Not Available"}
+                                        </div>
+                                    </button>
+
+                                    <button
+                                        className="btn btn-lg method-choice-card"
+                                        onClick={handleSelectGeminiAPI}
+                                    >
+                                        <div className="method-icon">☁️</div>
+                                        <div className="method-title">Gemini API</div>
+                                        <div className="method-description">
+                                            Cloud-based, reliable, free
+                                        </div>
+                                    </button>
                                 </div>
-                                <button
-                                    className="btn btn-primary"
-                                    onClick={handleSaveApiKey}
-                                    disabled={!apiKey.trim()}
-                                >
-                                    🔮 Activate Connection
-                                </button>
-                            </div>
+                            ) : selectedMethod === 'gemini-api' ? (
+                                <div className="setup-method">
+                                    <h4>☁️ Gemini API Key Setup</h4>
+                                    <p>Free and easy to set up:</p>
+                                    <ol>
+                                        <li>Visit <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a></li>
+                                        <li>Click "Create API Key" (requires Google account)</li>
+                                        <li>Copy your API key and paste it below</li>
+                                        <li>Click "Activate Connection"</li>
+                                    </ol>
+                                    <div className="form-group">
+                                        <label>🗝️ Gemini API Key</label>
+                                        <input
+                                            type="password"
+                                            value={apiKey}
+                                            onChange={(e) => setApiKey(e.target.value)}
+                                            placeholder="Enter your magical key"
+                                        />
+                                    </div>
+                                    <button
+                                        className="btn btn-primary"
+                                        onClick={handleSaveApiKey}
+                                        disabled={!apiKey.trim()}
+                                    >
+                                        🔮 Activate Connection
+                                    </button>
+                                    <button
+                                        className="btn btn-secondary"
+                                        onClick={() => setSelectedMethod(null)}
+                                        style={{ marginLeft: '8px' }}
+                                    >
+                                        ← Back
+                                    </button>
+                                </div>
+                            ) : null}
 
-                            <div className="setup-method">
-                                <h4>🔮 Method 2: Chrome Prompt API (Experimental)</h4>
-                                <p><strong>Note:</strong> Highly experimental. Requires ~22GB free disk space and specific hardware.</p>
-                                <ol>
-                                    <li>Enable <code>chrome://flags/#prompt-api-for-gemini-nano</code> → <strong>"Enabled"</strong></li>
-                                    <li>Enable <code>chrome://flags/#optimization-guide-on-device-model</code> → <strong>"Enabled BypassPerfRequirement"</strong></li>
-                                    <li>Restart Chrome completely</li>
-                                    <li>Go to <code>chrome://components</code> and find "Optimization Guide On Device Model"</li>
-                                    <li>If missing or version 0.0.0.0, click "Check for update"</li>
-                                    <li><strong>Troubleshooting:</strong> Open Console (F12) and run <code>await window.ai.languageModel.create()</code> or <code>await LanguageModel.create()</code></li>
-                                    <li>Reload RetroQuest to start talking to Quest Master!</li>
-                                </ol>
+                            <div className="setup-help">
+                                <details>
+                                    <summary>🔮 Chrome AI Setup Instructions (Advanced)</summary>
+                                    <p><strong>Note:</strong> Highly experimental. Requires ~22GB free disk space and specific hardware.</p>
+                                    <ol>
+                                        <li>Enable <code>chrome://flags/#prompt-api-for-gemini-nano</code> → <strong>"Enabled"</strong></li>
+                                        <li>Enable <code>chrome://flags/#optimization-guide-on-device-model</code> → <strong>"Enabled BypassPerfRequirement"</strong></li>
+                                        <li>Restart Chrome completely</li>
+                                        <li>Go to <code>chrome://components</code> and find "Optimization Guide On Device Model"</li>
+                                        <li>If missing or version 0.0.0.0, click "Check for update"</li>
+                                        <li><strong>Troubleshooting:</strong> Open Console (F12) and run <code>await window.ai.languageModel.create()</code></li>
+                                        <li>Reload RetroQuest to start talking to Quest Master!</li>
+                                    </ol>
+                                </details>
                             </div>
                         </div>
                     ) : (

@@ -5,7 +5,8 @@ const STORAGE_KEYS = {
     QUESTS: 'retroquest_quests',
     SHOP_ITEMS: 'retroquest_shop_items',
     TEMPLATES: 'retroquest_templates',
-    GEMINI_API_KEY: 'retroquest_gemini_api_key'
+    GEMINI_API_KEY: 'retroquest_gemini_api_key',
+    AI_METHOD_PREFERENCE: 'retroquest_ai_method_preference'
 };
 
 // Default user profile
@@ -120,6 +121,26 @@ export const loadGeminiApiKey = () => {
     } catch (error) {
         console.error('Error loading API key:', error);
         return '';
+    }
+};
+
+// AI Method Preference
+export const saveAiMethodPreference = (method) => {
+    try {
+        localStorage.setItem(STORAGE_KEYS.AI_METHOD_PREFERENCE, method);
+        return true;
+    } catch (error) {
+        console.error('Error saving AI method preference:', error);
+        return false;
+    }
+};
+
+export const loadAiMethodPreference = () => {
+    try {
+        return localStorage.getItem(STORAGE_KEYS.AI_METHOD_PREFERENCE) || null;
+    } catch (error) {
+        console.error('Error loading AI method preference:', error);
+        return null;
     }
 };
 
