@@ -11,6 +11,15 @@ export const QUEST_DESC_MAX = 300;
 export const SHOP_DESC_MAX = 200;
 export const TITLE_MAX = 50;
 
+// Timer durations (in minutes)
+export const TIMER_DURATIONS = {
+  FIFTEEN_MIN: 15,
+  THIRTY_MIN: 30,
+  FORTY_FIVE_MIN: 45,
+  ONE_HOUR: 60,
+  TWO_HOURS: 120
+};
+
 // Shop Categories - Real-world rewards
 export const SHOP_CATEGORIES = {
   SNACK: 'Snack',
@@ -67,6 +76,20 @@ export const BUILT_IN_QUEST_TEMPLATES = [
       coinReward: 20,
       tags: ['creativity', 'goals', 'project'],
       deadline: null
+    }
+  },
+  {
+    id: 'pomodoro-focus',
+    type: 'quest',
+    name: 'Pomodoro Focus',
+    data: {
+      title: 'Pomodoro Focus Session',
+      description: 'Complete a focused 25-minute work session with zero distractions. Stay on task until the timer completes!',
+      xpReward: 30,
+      coinReward: 12,
+      tags: ['focus', 'productivity', 'timed'],
+      deadline: null,
+      timerDuration: 25
     }
   }
 ];

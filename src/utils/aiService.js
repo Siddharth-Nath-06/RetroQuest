@@ -135,6 +135,12 @@ GUIDELINES:
 5. Add relevant tags for organization
 6. Use encouraging, RPG-themed language
 7. For complex goals, break them into a QUEST CHAIN (multiple related quests)
+8. **TIMED QUESTS**: For focused work sessions, suggest timed quests with appropriate durations:
+   - Pomodoro sessions: 25 minutes
+   - Short focus blocks: 15-30 minutes
+   - Medium sessions: 45-60 minutes
+   - Extended deep work: 90-120 minutes
+   - Use timers for: study sessions, exercise, meditation, focused work, practice sessions
 
 RESPONSE FORMAT:
 Return ONLY valid JSON (no markdown, no code blocks) with this structure:
@@ -146,7 +152,8 @@ Return ONLY valid JSON (no markdown, no code blocks) with this structure:
       "xpReward": 25,
       "coinReward": 10,
       "tags": ["tag1", "tag2"],
-      "deadline": "2024-11-21" (YYYY-MM-DD format or null)
+      "deadline": "2024-11-21" (YYYY-MM-DD format or null),
+      "timerDuration": 25 (in minutes, null if not a timed quest)
     }
   ]
 }

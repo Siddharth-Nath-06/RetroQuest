@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './QuestLog.css';
 import { QUEST_STATUS, BUILT_IN_QUEST_TEMPLATES } from '../utils/constants';
 import { validateQuestForm } from '../utils/validation';
@@ -17,7 +17,8 @@ const QuestLog = ({ quests, userProfile, onAddQuest, onUpdateQuest, onDeleteQues
         xpReward: '',
         coinReward: '',
         deadline: '',
-        tags: ''
+        tags: '',
+        timerDuration: ''
     });
     const [formErrors, setFormErrors] = useState({});
     const [confirmModal, setConfirmModal] = useState({ show: false, action: null, quest: null });
@@ -44,7 +45,11 @@ const QuestLog = ({ quests, userProfile, onAddQuest, onUpdateQuest, onDeleteQues
             ...formData,
             xpReward: parseInt(formData.xpReward) || 0,
             coinReward: parseInt(formData.coinReward) || 0,
-            tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : []
+            tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : [],
+            timerDuration: formData.timerDuration ? parseInt(formData.timerDuration) : null,
+            timerRemaining: formData.timerDuration ? parseInt(formData.timerDuration) * 60 : null,
+            timerRunning: false,
+            timerLastUpdate: null
         };
 
         const validation = validateQuestForm(questData, level);
@@ -64,7 +69,7 @@ const QuestLog = ({ quests, userProfile, onAddQuest, onUpdateQuest, onDeleteQues
     };
 
     const resetForm = () => {
-        setFormData({ title: '', description: '', xpReward: '', coinReward: '', deadline: '', tags: '' });
+        setFormData({ title: '', description: '', xpReward: '', coinReward: '', deadline: '', tags: '', timerDuration: '' });
         setFormErrors({});
         setShowForm(false);
         setEditingQuest(null);
@@ -77,7 +82,8 @@ const QuestLog = ({ quests, userProfile, onAddQuest, onUpdateQuest, onDeleteQues
             xpReward: template.data.xpReward.toString(),
             coinReward: template.data.coinReward.toString(),
             deadline: template.data.deadline || '',
-            tags: template.data.tags.join(', ')
+            tags: template.data.tags.join(', '),
+            timerDuration: template.data.timerDuration ? template.data.timerDuration.toString() : ''
         });
     };
 
@@ -118,7 +124,8 @@ const QuestLog = ({ quests, userProfile, onAddQuest, onUpdateQuest, onDeleteQues
             xpReward: quest.xpReward.toString(),
             coinReward: quest.coinReward.toString(),
             deadline: quest.deadline || '',
-            tags: quest.tags.join(', ')
+            tags: quest.tags.join(', '),
+            timerDuration: quest.timerDuration ? quest.timerDuration.toString() : ''
         });
         setShowForm(true);
     };
@@ -274,6 +281,17 @@ const QuestLog = ({ quests, userProfile, onAddQuest, onUpdateQuest, onDeleteQues
                                     onChange={handleInputChange}
                                 />
                             </div>
+                            <div className="form-group">
+                                <label>Timer (minutes)</label>
+                                <input
+                                    type="number"
+                                    name="timerDuration"
+                                    value={formData.timerDuration}
+                                    onChange={handleInputChange}
+                                    placeholder="Optional"
+                                    min="1"
+                                />
+                            </div>
                         </div>
 
                         <div className="form-group">
@@ -325,6 +343,7 @@ const QuestLog = ({ quests, userProfile, onAddQuest, onUpdateQuest, onDeleteQues
                     onEdit={handleEditQuest}
                     onArchive={handleArchiveQuest}
                     onDelete={handleDeleteQuest}
+                    onUpdateQuest={onUpdateQuest}
                     emptyMessage="No active quests. Create one to get started!"
                 />
 
@@ -333,6 +352,7 @@ const QuestLog = ({ quests, userProfile, onAddQuest, onUpdateQuest, onDeleteQues
                     quests={completedQuests}
                     onArchive={handleArchiveQuest}
                     onDelete={handleDeleteQuest}
+                    onUpdateQuest={onUpdateQuest}
                     isCompleted
                     emptyMessage="No completed quests yet. Complete your first quest!"
                     collapsible
@@ -344,6 +364,7 @@ const QuestLog = ({ quests, userProfile, onAddQuest, onUpdateQuest, onDeleteQues
                     quests={archivedQuests}
                     onRevive={handleReviveQuest}
                     onDelete={handleDeleteQuest}
+                    onUpdateQuest={onUpdateQuest}
                     isArchived
                     emptyMessage="No archived quests."
                     collapsible
@@ -362,21 +383,21 @@ const QuestLog = ({ quests, userProfile, onAddQuest, onUpdateQuest, onDeleteQues
     );
 };
 
-const QuestSection = ({ title, quests, onComplete, onEdit, onArchive, onRevive, onDelete, isCompleted, isArchived, emptyMessage, collapsible = false, defaultCollapsed = false }) => {
+const QuestSection = ({ title, quests, onComplete, onEdit, onArchive, onRevive, onDelete, onUpdateQuest, isCompleted, isArchived, emptyMessage, collapsible = false, defaultCollapsed = false }) => {
     const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
 
     return (
         <div className="quest-section">
             <div className="quest-section-header">
-                <h3>
+                <h3
+                    className={collapsible ? 'collapsible-header' : ''}
+                    onClick={collapsible ? () => setIsCollapsed(!isCollapsed) : undefined}
+                    style={collapsible ? { cursor: 'pointer' } : {}}
+                >
                     {collapsible && (
-                        <button
-                            className="collapse-toggle"
-                            onClick={() => setIsCollapsed(!isCollapsed)}
-                            aria-label={isCollapsed ? "Expand" : "Collapse"}
-                        >
+                        <span className="collapse-toggle">
                             {isCollapsed ? '▶' : '▼'}
-                        </button>
+                        </span>
                     )}
                     {title} ({quests.length})
                 </h3>
@@ -398,6 +419,7 @@ const QuestSection = ({ title, quests, onComplete, onEdit, onArchive, onRevive, 
                                 onArchive={onArchive}
                                 onRevive={onRevive}
                                 onDelete={onDelete}
+                                onUpdateQuest={onUpdateQuest}
                                 isCompleted={isCompleted}
                                 isArchived={isArchived}
                             />
@@ -409,7 +431,108 @@ const QuestSection = ({ title, quests, onComplete, onEdit, onArchive, onRevive, 
     );
 };
 
-const QuestCard = ({ quest, onComplete, onEdit, onArchive, onRevive, onDelete, isCompleted, isArchived }) => {
+const QuestCard = ({ quest, onComplete, onEdit, onArchive, onRevive, onDelete, isCompleted, isArchived, onUpdateQuest }) => {
+    const [timerRemaining, setTimerRemaining] = useState(quest.timerRemaining);
+    const [timerRunning, setTimerRunning] = useState(quest.timerRunning || false);
+
+    // Timer countdown effect
+    useEffect(() => {
+        if (!quest.timerDuration || isCompleted || isArchived) return;
+
+        let interval;
+
+        if (timerRunning && timerRemaining > 0) {
+            interval = setInterval(() => {
+                setTimerRemaining(prev => {
+                    const newRemaining = prev - 1;
+
+                    // Update quest object with new timer state
+                    if (onUpdateQuest) {
+                        onUpdateQuest({
+                            ...quest,
+                            timerRemaining: newRemaining,
+                            timerRunning: true,
+                            timerLastUpdate: new Date().toISOString()
+                        });
+                    }
+
+                    // Auto-complete when timer reaches 0
+                    if (newRemaining <= 0) {
+                        setTimerRunning(false);
+                        if (onComplete) {
+                            setTimeout(() => onComplete(quest), 500);
+                        }
+                        return 0;
+                    }
+
+                    return newRemaining;
+                });
+            }, 1000);
+        }
+
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [timerRunning, timerRemaining, quest, onComplete, onUpdateQuest, isCompleted, isArchived]);
+
+    // Resume timer on mount if it was running
+    useEffect(() => {
+        if (quest.timerRunning && quest.timerLastUpdate && !isCompleted && !isArchived) {
+            const lastUpdate = new Date(quest.timerLastUpdate);
+            const now = new Date();
+            const elapsedSeconds = Math.floor((now - lastUpdate) / 1000);
+            const newRemaining = Math.max(0, quest.timerRemaining - elapsedSeconds);
+
+            setTimerRemaining(newRemaining);
+            if (newRemaining > 0) {
+                setTimerRunning(true);
+            } else {
+                // Timer expired while page was closed
+                if (onComplete) {
+                    onComplete(quest);
+                }
+            }
+        }
+    }, []);
+
+    const handleTimerToggle = () => {
+        const newRunningState = !timerRunning;
+        setTimerRunning(newRunningState);
+
+        if (onUpdateQuest) {
+            onUpdateQuest({
+                ...quest,
+                timerRemaining,
+                timerRunning: newRunningState,
+                timerLastUpdate: new Date().toISOString()
+            });
+        }
+    };
+
+    const handleTimerReset = () => {
+        const originalDuration = quest.timerDuration * 60; // Convert minutes to seconds
+        setTimerRemaining(originalDuration);
+        setTimerRunning(false);
+
+        if (onUpdateQuest) {
+            onUpdateQuest({
+                ...quest,
+                timerRemaining: originalDuration,
+                timerRunning: false,
+                timerLastUpdate: new Date().toISOString()
+            });
+        }
+    };
+
+    const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    const isTimerLow = timerRemaining > 0 && timerRemaining < 300; // Less than 5 minutes
+    const isTimerAtFull = timerRemaining === quest.timerDuration * 60;
+
     return (
         <div className="quest-card card-appear">
             <div className="quest-header">
@@ -430,6 +553,32 @@ const QuestCard = ({ quest, onComplete, onEdit, onArchive, onRevive, onDelete, i
                     ))}
                 </div>
             )}
+
+            {/* Timer Display */}
+            {quest.timerDuration && !isCompleted && !isArchived && (
+                <div className={`quest-timer ${timerRunning ? 'timer-running' : ''} ${isTimerLow ? 'timer-warning' : ''}`}>
+                    <div className="timer-display">
+                        ⏱️ {formatTime(timerRemaining)}
+                    </div>
+                    <div className="timer-controls">
+                        <button
+                            className="btn btn-sm timer-control"
+                            onClick={handleTimerToggle}
+                            disabled={timerRemaining <= 0}
+                        >
+                            {timerRunning ? '⏸ Pause' : '▶ Start'}
+                        </button>
+                        <button
+                            className="btn btn-sm timer-control"
+                            onClick={handleTimerReset}
+                            disabled={isTimerAtFull}
+                        >
+                            🔄 Reset
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div className="quest-actions">
                 {!isCompleted && !isArchived && (
                     <>
